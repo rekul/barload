@@ -1,0 +1,127 @@
+function Component(config){
+
+	if(this instanceof Component){
+		this.renders = {};
+		this.viewPath = config.viewPath || '../../components/' + this.getClassName() + '/views/';
+		this.config = config;
+		this.template = config.template || 'template.xml' ;
+		this.loadTemplate();
+
+		this.$el = $('<div class="component"></div>');
+		this.$el.addClass(this.getClassName());
+		this.$el.css('display', 'none');
+
+		this.events = {};
+
+		if(config.render){
+			return this.render();
+		}
+	}else{
+		return new Component(config);
+	}
+}
+Component.prototype.addEventListener = function(event, fn){
+	if(this.events[event] == undefined){
+		this.events[event] = [];
+	}
+	this.events[event].push(fn)
+}
+Component.prototype.removeEventListener = function(){
+	// coming soon
+}
+Component.prototype.dispatchEvent = function(event, data){
+	if(this.events[event] != undefined){
+		for(var i = 0; i<this.events[event].length; i++){
+			if(this.events[event][i] != undefined){
+				this.events[event][i]({
+					target:this,
+					data:data
+				});
+			}
+		}
+	}
+}
+
+Component.prototype.loadTemplate = function(){
+	var _me = this;
+	_me.template = _me.viewPath+_me.template;
+	$.get(_me.template)
+		.success(function(markup){
+			_me.$template = $(markup);
+		}).error(function(){
+			// console.log('Template ', _me.template, 'not found.');
+		});
+}
+Component.prototype.render = function(view){
+	if(this.$template == undefined){
+		var _me = this;
+		setTimeout(function(){
+			_me.render(view);
+		}, 500);
+		return this.$el;
+	}
+	if(view === undefined){
+		view = 'default.html';
+	}
+	// console.log("VIEW: " + this.viewPath + view);
+
+	var _me = this;
+	$.get(this.viewPath + view)
+		.success(function(view){
+			// console.log('got view');
+			_me.$view = $(view);
+			_me.renderToTemplate();
+			_me.$el.html(_me.$view);
+			_me.dispatchEvent('onRender');
+			// console.log('onRender Complete')
+		})
+		.error(function(){
+			// console.log('View ', _me.view, 'not found.')
+	});
+
+	return this.$el;
+}
+Component.prototype.renderToTemplate = function(){
+	// console.log('renderToTemplate()');
+	var _me = this;
+	this.$template.find('template').children().each(function(){
+		_me.renderPartial(this);
+	});
+	this.$view.find('partial').remove();
+}
+Component.prototype.renderPartial = function(node){
+	var _me = this;
+	partial = $('<div class="partial"></div>');
+	partial.addClass(node.nodeName);
+	$(node).children().each(function(){
+		partial.append($(_me.xmlToString(this)));
+	});
+	if(this.renders[node.nodeName] == undefined){
+		_me.$view.find('partial#'+node.nodeName).after(partial);
+	}else{
+		// defined by subclass, with custom functionality
+		this.renders[node.nodeName](partial);
+	}
+}
+Component.prototype.getPartial = function(id){
+	var _me = this;
+	var partial = $('<div class="partial"></div>');
+	partial.addClass(id);
+	this.$template.find('template ' + id).children().each(function(){
+		partial.append($(_me.xmlToString(this)));
+	});
+	//console.log(this.$template.find('template').children(id));
+	return partial;
+}
+
+
+Component.prototype.getClassName = function() {
+   var funcNameRegex = /function (.{1,})\(/;
+   var results = (funcNameRegex).exec((this).constructor.toString());
+   return (results && results.length > 1) ? results[1] : "";
+};
+Component.prototype.xmlToString = function(xmlData){
+
+	var xmlData = $(xmlData).clone()[0];
+	return $('<div>').append(xmlData).html()
+}

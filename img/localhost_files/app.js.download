@@ -1,0 +1,27 @@
+require([
+    'jquery', 'jquery-ui.min', 'jquery.cookie'
+], function() {
+    require([
+        'gsap/TweenMax.min',
+        'util',
+        'lms',
+        'tracking',
+        'menu',
+        'footer',
+        'plugin',
+        '../../components/component',
+        'shell',
+        'debug',
+        'loading-bar.min'
+    ], function() {
+        require(['../../components/AudioPlayer/AudioPlayer'], function() {
+            _shell = new Shell();
+            setTimeout(function() {
+                // if the ready handler failed, because of LMS DOM meddling....
+                if (_shell == null) {
+                    _shell = new Shell();
+                }
+            }, 5000)
+        });
+    });
+});

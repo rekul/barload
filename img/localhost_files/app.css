@@ -1,0 +1,41 @@
+#container {
+  width: 100%;
+  height: 100%;
+  margin: 0 auto;
+  position: relative;
+  z-index: 0; }
+
+.main-content {
+  background: url("../../core/img/bg_gridpaper.jpg") top left no-repeat;
+  height: 563px;
+  margin: auto;
+  width: 1000px; }
+
+.on-primary {
+  color: #e9a031 !important; }
+
+audio {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0; }
+
+.ldBar {
+  position: relative; }
+
+.ldBar.label-center > .ldBar-label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  -webkit-transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);
+  text-shadow: 0 0 3px #fff; }
+
+.ldBar-label:after {
+  content: "%";
+  display: inline; }
+
+.ldBar.no-percent .ldBar-label:after {
+  content: ""; }
+
+/*# sourceMappingURL=app.css.map */

@@ -1,0 +1,605 @@
+function AudioPlayer(rootFolder, id, target){
+	target = target || 'body';
+	this.target = target;
+	this.name = '';
+	if(id == undefined){
+		id='';
+	}
+	this.id = id;
+	this.rootFolder = rootFolder;
+	if(rootFolder == undefined || rootFolder == null){
+		this.rootFolder = '';
+	}
+	var _me = this;
+	this.debug = $('<div id="audioDebug"></div>');
+	this.debug.html('Audio Playing');
+	this.debug.click(
+		function(){
+			_me.audioEnded();
+		}).css('display', 'none');
+
+	$('body').append(this.debug);
+
+	this.createTag();
+
+	this.timedEvents = [];
+	this.watcher; // interval ID
+	this.onComplete; // callback FN
+	this.volume = 1;
+
+	this.isPlaying = false;
+	this.events = [];
+
+	this.controller = new AudioController(this);
+
+	this.firstTime = true;
+
+	this.watcher = setInterval(function(){
+		_me.watchAudioTimer();
+	}, 33);
+}
+AudioPlayer.prototype.addEventListener = function(evt, callback){
+	this.events.push({
+		event:evt,
+		fn:callback
+	});
+}
+AudioPlayer.prototype.removeEventListener = function(evt){
+	this.events.pop({
+		event:evt
+	});
+}
+AudioPlayer.prototype.createTag = function(){
+	console.log('AudioPlayer.createTag()');
+	this.div = $('<audio controls id="audioPlayer'+this.id+'"></audio>');
+	this.div = this.div[0];
+	$(this.target).append(this.div);
+}
+AudioPlayer.prototype.reset = function(){
+	console.log('AudioPlayer.reset()');
+	this.createTag();
+	if(this.controller != null){
+		this.controller.tearDown();
+	}
+	this.events = [];
+	isPlaying = false;
+	this.controller = new AudioController(this);
+	this.controller.init();
+}
+AudioPlayer.prototype.dispatchEvent = function(evt){
+	for(var i = 0; i<this.events.length; i++){
+		if(this.events[i].event == evt){
+			this.events[i].fn(this);
+		}
+	}
+}
+AudioPlayer.prototype.queueFile = function(url){
+	console.log("!!!queueFile")
+	this.div.src = 	this.rootFolder + 'content/audio/'+url;
+}
+AudioPlayer.prototype.queueFile2 = function(url){
+	console.log("!!!queueFile2")
+	this.div.src = 	this.rootFolder + url;
+}
+AudioPlayer.prototype.url = function(){
+	return this.div.src;
+}
+AudioPlayer.prototype.playQueued = function(events, offset) {
+	this.firstTime = true;
+	this.isPlaying = true;
+	offset = offset || undefined;
+	var audio_id = this.url();
+	if(offset == undefined){
+		offset = 0;
+	}
+	this.onComplete = null;
+
+	if(this.div.src != audio_id){
+		this.div.src = 	this.rootFolder + audio_id;
+	}
+
+	var _me = this;
+	this.div.volume = this.volume;
+	if (offset == 0) {
+		_me.div.play();
+		//this.div.play();
+	} else {
+		$(this.div).on('loadeddata', function(){
+			_me.div.currentTime = offset;
+			_me.div.play();
+			$(_me.div).unbind('ended');
+		});
+	}
+
+	this.debug.css('display', 'block');
+
+	this.timedEvents = [];
+	$(this.div).unbind().on('ended', function(){
+		_me.audioEnded();
+	});
+	for(var p in events){
+		console.log('Events', p);
+		if(p == 'complete'){
+			_me.onComplete = events[p];
+			if (events['completeScope'] != undefined) {
+				_me.onCompleteScope = events['completeScope'];
+			}
+		}else{
+			this.timedEvents.push({
+				'time':p,
+				'event':events[p],
+				'fired':false
+			});
+		}
+	}
+
+	this.controller.init();
+}
+AudioPlayer.prototype.playCustom = function(url, events, offset) {
+	console.log("!!!playCustom")
+	var _me = this;
+	var audio_id = url;
+	var theDiv = $(this.div);
+
+	this.timedEvents = [];
+	this.isPlaying = true;
+	this.onComplete = null;
+	this.div.volume = this.volume;
+	this.debug.css('display', 'block');
+
+	if (offset == undefined) offset = 0;
+	if (this.div.src != url) this.div.src = url;
+
+	if (offset == 0) {
+		this.div.play();
+		this.isPlaying = true;
+	} else {
+		theDiv.on('loadeddata', function() {
+			_me.div.currentTime = offset;
+			_me.div.play();
+			this.isPlaying = true;
+			$(_me.div).unbind('ended');
+		});
+	}
+	theDiv.unbind().on('ended', function() {
+		_me.audioEnded();
+	});
+
+	for (var p in events) {
+	    if (p == 'complete') {
+	        _me.onComplete = events[p];
+			if (events['completeScope'] != undefined) {
+				_me.onCompleteScope = events['completeScope'];
+			}
+	    } else {
+	        this.timedEvents.push({
+	            'time': p,
+	            'event': events[p],
+	            'fired': false
+	        });
+	    }
+	}
+
+	$(_shell).on( "onAudioPlayerEnded", function() {
+		console.log('onAudioPlayerEnded');
+	});
+
+	this.controller.init();
+}
+AudioPlayer.prototype.play = function(url, events, offset){
+ console.log("play audio start")
+	var audio_id = url;
+	/*
+	if(isIE11()){
+		url = url.replace('.mp3', '.aac');
+		url = url.replace('.wav', '.aac');
+		$(this.div).remove();
+		this.div = $('<audio controls id="audioPlayer"></audio>');
+		this.div = this.div[0];
+		$('body').append(this.div);
+	}
+	*/
+	if(offset == undefined){
+		offset = 0;
+	}
+	this.onComplete = null;
+
+	if(this.div.src != url){
+		this.div.src = 	this.rootFolder + 'content/audio/'+url;
+		//$(this.div).empty();
+		//$(this.div).append('<source src="content/audio/' + url + '" />');
+	}
+
+	var _me = this;
+	this.div.volume = this.volume;
+	if (offset == 0) {
+		_me.div.play();
+		this.isPlaying = true;
+		//this.div.play();
+	} else {
+		$(this.div).on('loadeddata', function(){
+			_me.div.currentTime = offset;
+			_me.div.play();
+			this.isPlaying = true;
+			$(_me.div).unbind('ended');
+		});
+	}
+
+	this.debug.css('display', 'block');
+
+	this.timedEvents = [];
+	$(this.div).unbind().on('ended', function(){
+		_me.audioEnded();
+	});
+	for(var p in events){
+		if(p == 'complete'){
+			_me.onComplete = events[p];
+			if (events['completeScope'] != undefined) {
+				_me.onCompleteScope = events['completeScope'];
+			}
+		}else{
+			this.timedEvents.push({
+				'time':p,
+				'event':events[p],
+				'fired':false
+			});
+		}
+	}
+
+	this.controller.init();
+}
+AudioPlayer.prototype.fadeOut = function(countdown) {
+	console.log('FadeOUt');
+	$(this.div).animate({ volume: 0 }, 1000*countdown);
+}
+AudioPlayer.prototype.watchAudioTimer = function(){
+	try{
+		var t = this.div.currentTime;
+		for(var i = 0; i<this.timedEvents.length; i++){
+			if(t > this.timedEvents[i].time && !this.timedEvents[i].fired){
+				this.timedEvents[i].fired = true;
+				this.timedEvents[i].event();
+			}
+		}
+		this.dispatchEvent('timeupdate');
+	}catch(e){
+		console.log('Timer watch Error:', e);
+		// this.createTag();
+	}
+}
+AudioPlayer.prototype.audioEnded = function(){
+	this.debug.css('display', 'none');
+	this.dispatchEvent('End');
+	this.pause();
+	$(_shell).trigger('onAudioPlayerEnded');
+	/*
+	try {
+		this.div.remove();
+	} catch(err) {
+		$(this.div).remove();
+	}
+	*/
+	// console.log("this.firstTime" , this.firstTime)
+	if(this.firstTime){
+		this.firstTime = false;
+		if(this.onComplete != null){
+			if (this.onCompleteScope != undefined) {
+				// apply with scope
+				TweenMax.delayedCall(0, this.onComplete, null, this.onCompleteScope);
+			} else {
+				this.onComplete();
+			}
+		}
+	}
+	this.isPlaying = false;
+}
+AudioPlayer.prototype.pause = function(){
+	try{
+		this.div.pause();
+		this.dispatchEvent('pause');
+	}catch(e){
+		// no audio to pause
+	}
+	this.isPlaying = false;
+}
+AudioPlayer.prototype.reset = function(){
+	this.pause();
+	this.dispatchEvent('pause');
+	this.isPlaying = false;
+}
+AudioPlayer.prototype.resume = function(){
+	this.isPlaying = true;
+	this.div.play();
+	this.dispatchEvent('play');
+}
+AudioPlayer.prototype.setVolume = function(n){
+	this.volume = n;
+	try{
+		this.div.volume = n;
+	}catch(e){
+		// no audio to set
+	}
+}
+AudioPlayer.prototype.getProgress = function(){
+	try{
+		return {
+			time:this.div.currentTime,
+			percent:this.div.currentTime/this.div.duration
+		}
+	}catch(e){
+		return {
+			time:0,
+			percent:0
+		}
+	}
+}
+AudioPlayer.prototype.seek = function(n){
+	this.div.currentTime = n;
+}
+AudioPlayer.prototype.seekPercent = function(p){
+	this.div.currentTime = p*this.div.duration;
+}
+/*
+AudioPlayer.prototype.addCaptions = function(path){
+	//$(this.div).append('<track src="' + path + '" kind="subtitles" srclang="en" label="English" default />');
+}
+*/
+
+
+/* recently changed to use native audio player, primarily for 508, lets see how this goes */
+function AudioController(player, width /*deprecated*/){
+	this.player = player;
+	this.container = null;
+	this.captions = null;
+
+	var _me = this;
+	$(this.player.div).on('remove', function(){
+		// console.log('player removed, cleaning up');
+		_me.tearDown();
+	})
+}
+AudioController.prototype.init = function(){
+	// probably no longer need
+}
+AudioController.prototype.attach = function(div, width /*deprecated*/){
+	$(this.player.div).attr('controls', 'true');
+	div.append(this.player.div);
+	this.container = div;
+}
+AudioController.prototype.watchPlayback = function(){
+	// probably no longer need
+	//console.log(this.player.getProgress().time);
+}
+AudioController.prototype.tearDown = function(){
+	if(this.captions != null){
+		this.captions.tearDown();
+		this.captions = null;
+	}
+}
+AudioController.prototype.addCaptions = function(path){
+	this.captions = new AudioCaptions(path, this.player, this.container);
+}
+AudioController.prototype.reset = function(){
+	this.tearDown();
+}
+
+
+function AudioCaptions(path, player, container){
+	this.captions = [];
+	this.player = player;
+	this.container = container;
+	this.watcher = -1; // intervalID
+	this.currentCaption;
+	this.tearDown();
+
+	var _me = this;
+	$.get(path, function(vtt){
+		_me.parseCaptions(vtt);
+		_me.watcher = setInterval(function(){
+			_me.watchPlayback();
+		}, 100)
+	});
+}
+AudioCaptions.prototype.parseCaptions = function(txt){
+	var caption = null;
+
+	var lines = txt.split('\r\n');
+	for(var i = 0; i<lines.length; i++){
+		if(lines[i].indexOf('-->') > -1){
+			caption = {
+				txt:[]
+			};
+			times = lines[i].split('-->');
+			caption.start = this.parseTimecode(times[0]);
+			caption.end = this.parseTimecode(times[1]);
+		}else if(lines[i] == '' && caption != null){
+			this.captions.push(caption);
+			caption = null;
+		}else if(caption != null){
+			caption.txt.push(lines[i]);
+		}
+	}
+	if(caption != null){
+		this.captions.push(caption);
+	}
+}
+AudioCaptions.prototype.parseTimecode = function(str){
+	str = str.trim();
+	var tmp = str.split(':');
+	if(tmp.length == 2){
+		tmp.unshift('00');
+	}
+	var val = Number(tmp[0]*60*60) + Number(tmp[1]*60) + Number(tmp[2]);
+	return val;
+}
+AudioCaptions.prototype.watchPlayback = function(){
+	var t = this.player.getProgress().time;
+	var capToShow = null;
+	for (var i = 0; i<this.captions.length; i++){
+		if(this.captions[i].start <= t && this.captions[i].end > t){
+			capToShow = this.captions[i];
+		}
+	}
+	if(capToShow == null){
+		this.clearCaptions();
+	}else if(this.currentCaption != capToShow){
+		this.showCaption(capToShow);
+	}
+}
+AudioCaptions.prototype.clearCaptions = function(){
+	try{
+		this.container.find('.audiocaption').remove();
+	}catch(e){
+		clearInterval(this.watcher);
+	}
+}
+AudioCaptions.prototype.showCaption = function(cap){
+	this.clearCaptions();
+	var caps = $('<div class="audiocaption"></div>');
+	for(var i = 0; i<cap.txt.length; i++){
+		if(i > 0){
+			caps.append('<br />');
+		}
+		caps.append('<div class="line">' + cap.txt[i] + '</div>');
+	}
+	this.container.append(caps);
+}
+AudioCaptions.prototype.tearDown = function(){
+	console.log('AudioCaptions.tearDown()');
+	clearInterval(this.watcher);
+	this.clearCaptions();
+	this.captions = [];
+}
+/*
+function AudioController(player, width){
+	this.name = '';
+
+	this.player = player;
+	this.hasPlayed = false;
+	this.div = $('<div class="audioController"></div>');
+	this.track = $('<div class="track"></div>');
+
+	this.div.append(this.track);
+	this.playButton = $('<div class="playButton"></div>');
+	this.div.append(this.playButton);
+	this.scrubber = $('<div class="scrubber"></div>');
+	this.div.append(this.scrubber);
+	this.volume = $('<div class="volume"><div class="fill"></div></div>');
+	this.div.append(this.volume);
+}
+AudioController.prototype.init = function(){
+	clearInterval(this.watcher);
+
+	var _me = this;
+	this.watcher = this.watchPlayback();
+
+	this.playButton.unbind()
+		.click(function(){
+			if(!$(this).hasClass('pause')){
+				_me.player.resume();
+			}else{
+				_me.player.pause();
+			}
+	})
+	this.player.addEventListener('End', function(){
+		_me.player.seek(0);
+		_me.playButton.removeClass('pause');
+	});
+	this.volume.unbind().click(function(e){
+		var mouseX = e.pageX - $(this).offset().left;
+		var p = mouseX / $(this).width();
+		$(this).find('.fill').css('width', Math.round(p*100) + '%');
+		_me.player.setVolume(p);
+	})
+}
+AudioController.prototype.attach= function(div, width){
+	if(width == '' || width == undefined){
+		width = 367;
+	}
+	this.trackRight = width - 64;
+
+	this.trackLeft = 38;
+	this.trackWidth = this.trackRight - this.trackLeft;
+	this.track.css({'width':this.trackRight - this.trackLeft + 'px',
+					'left':this.trackLeft +12+ 'px'});
+	this.scrubber.css('left', this.trackLeft);
+	this.div.css('width', width);
+
+	div.append(this.div);
+	var _me = this;
+
+	this.scrubber.mousedown(function(){
+		_me.player.pause();
+		clearInterval(_me.watcher);
+		var dragFn = function(e){
+			_me.scrubber.css('left', e.pageX - _me.div.offset().left - _me.scrubber.width()/2);
+		}
+		var upFn = function(){
+			var p = ($(_me.scrubber).position().left - _me.trackLeft)/_me.trackWidth;
+			_me.player.seekPercent(p)
+
+			if(_me.playButton.hasClass('pause')){
+				_me.player.resume();
+			}
+			_me.watcher = _me.watchPlayback();
+			$(window.content).unbind('mousemove');
+			$(window.content).unbind('mouseup');
+			$(window).unbind(upFn);
+		}
+
+		$(window.content).mousemove(dragFn);
+		$(window.content).mouseup(upFn);
+		$(window).mouseup(upFn);
+
+	});
+	/*.mouseup(function(){
+
+	});
+
+	this.scrubber.draggable({
+		axis:'x',
+		//containment:[this.div.offset().left + this.trackLeft, 0, this.div.offset().left + this.trackRight, 10],
+		start:function(){
+			console.log('drag?');
+		//	_me.player.pause();
+		//	clearInterval(_me.watcher);
+		},
+		'drag':function(){
+			// drag?
+
+		},
+		stop:function(){
+			var p = ($(this).position().left - _me.trackLeft)/_me.trackWidth;
+			_me.player.seekPercent(p)
+			if(_me.playButton.hasClass('pause')){
+				_me.player.resume();
+			}
+			_me.watcher = _me.watchPlayback();
+		}
+
+	})
+
+}
+AudioController.prototype.watchPlayback = function(){
+	var _me = this;
+	var intID = setInterval(function(){
+		var prog = _me.player.getProgress();
+		if(prog.time > 0){
+			_me.hasPlayed = true;
+		}
+		_me.scrubber.css('left', _me.trackLeft + _me.trackWidth*prog.percent);
+		if(_me.player.isPlaying){
+			_me.playButton.addClass('pause');
+		}else{
+			_me.playButton.removeClass('pause');
+		}
+	}, 33);
+	return intID;
+}
+AudioController.prototype.tearDown = function(){
+	this.div.remove();
+	clearInterval(this.watcher);
+	this.scrubber.draggable('destroy');
+	this.playButton.removeClass('pause');
+}
+*/

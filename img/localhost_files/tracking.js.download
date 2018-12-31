@@ -1,0 +1,138 @@
+function Tracking(type){
+	debug('Attempt Tracking Intialize');
+	
+	this.lesson_status = null;
+	this.lesson_score = null;
+	this.elapsed_time = null;
+	this.suspend_data = null;	
+
+	this.currentSection = null;
+	this.courseSections = [];
+
+	var _me = this;
+
+	this.LMS = new LMS(type, function(){
+		_me.activate();
+	});
+}
+Tracking.prototype.addCourseSection = function(obj){
+	var section = {'id':obj.id, 'status':'N'};
+	if(obj.tracked == true){
+		section.tracked = true;
+	}else{
+		section.tracked = false;
+	}
+
+	this.courseSections.push(section);
+}
+Tracking.prototype.activate = function(){
+	this.retrieveData();
+	this.parseInitials();	
+	this.activated = true;
+}
+Tracking.prototype.retrieveData = function(){
+	debug('COMMUNICATION ATTEMPT : Retreive Data');
+	debug(this.LMS);
+	this.lesson_status = this.LMS.getValue('lesson_status');
+	this.lesson_score = this.LMS.getValue('lesson_score');
+	this.lesson_location = this.LMS.getValue('lesson_location');
+	this.elapsed_time = this.LMS.getValue('elapsed_time');
+	this.suspend_data = this.LMS.getValue('suspend_data');
+}
+Tracking.prototype.parseInitials = function(){
+	debug('Parsing stored data....');
+	debug('     lesson_status: ' + this.lesson_status);
+	debug('     lesson_score: ' + this.lesson_score);
+	debug('     lesson_time: ' + this.elapsed_time);
+	debug('     suspend_data: ' + this.suspend_data);
+	debug('     lesson_location: ' + this.lesson_location);
+
+	if(this.lesson_status != 'complete'){		
+		debug('setting inital status');
+		this.setLessonStatus('incomplete');		
+	}
+	if(this.suspend_data == '' || this.suspend_data == 'null' || this.suspend_data == undefined){
+		debug('no location data, starting fresh');
+	}else{
+		debug('courseSections from json?');
+		this.courseSections = JSON.parse(this.suspend_data);
+	}
+
+	if(this.lesson_location == undefined || this.lesson_location == ''){
+		this.lesson_location = null;
+	}
+	debug(this.courseSections);
+	this.saveLocation();
+}
+Tracking.prototype.setTrackingSection = function(id){
+	this.currentSection = this.getTrackingIndexById(id);
+	this.setBookmark("");
+	//console.log('current section ' + this.currentSection);
+}
+Tracking.prototype.getTrackingIndexById = function(id){
+	for(var i = 0; i<this.courseSections.length; i++){
+		if(this.courseSections[i].id == id){
+			return i;
+		}
+	}
+	return -1;
+}
+Tracking.prototype.getSectionStatus = function(id){
+	var idx = this.getTrackingIndexById(id);
+	if(idx == -1){
+		return 'N';
+	}
+	return this.courseSections[idx].status;
+}
+Tracking.prototype.startSection = function(){
+	debug('start section');
+	//console.log(this.currentSection);
+	if(this.courseSections[this.currentSection].status != 'C'){		
+		this.setSectionStatus('I');  
+	}
+}
+Tracking.prototype.finishSection = function(){
+	$('.menuItem[menuid="'+(this.currentSection+1)+'"]').addClass('section-complete');
+	this.setSectionStatus('C');
+	this.checkLessonComplete();
+}
+Tracking.prototype.setSectionStatus = function(val){
+	this.courseSections[this.currentSection].status = val;
+	this.saveLocation();
+}
+Tracking.prototype.setBookmark = function(id){
+	this.LMS.setValue('lesson_location', this.currentSection + ":::" + id);
+	console.log("Tracking:::SetBookmark():::" + this.currentSection + ":::" + id);
+}
+Tracking.prototype.clearBookmark = function(){
+	this.LMS.setValue('lesson_location', null);
+	this.lesson_location = null;
+}
+/* deprecated
+Tracking.prototype.getSectionStatus = function(key){
+	console.log(key);
+	return this.sectionProgress[key];
+}
+*/
+Tracking.prototype.saveLocation = function(){
+	// debug(JSON.stringify(this.courseSections));
+	// this.LMS.setValue('suspend_data', JSON.stringify(this.courseSections));
+}
+Tracking.prototype.setLessonStatus = function(val){
+	this.LMS.setValue('lesson_status', val);
+}
+Tracking.prototype.checkLessonComplete = function(){
+	var done = true;
+	for(var i = 0; i<this.courseSections.length; i++){
+		console.log(this.courseSections[i].tracked);
+		console.log(this.courseSections[i].status);
+		if(this.courseSections[i].tracked && this.courseSections[i].status != 'C'){
+			done = false;
+		}
+	}
+	if(done){
+		this.LMS.setValue('lesson_status', 'C');
+	}else{
+		this.LMS.setValue('lesson_status', 'I');
+	}
+}

@@ -1,0 +1,3 @@
+function Menu(cs, rs) {
+	console.log('Courses', cs);
+}

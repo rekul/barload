@@ -1,0 +1,408 @@
+_shell = null;
+
+function Shell() {
+    this.courses = [];
+    this.resources = [];
+    this.menu; // Menu
+    this.footer; // Footer
+    this.layers = {};
+    this.getConfig();
+    this.currentModel; // window
+    this.currentSection; // object
+    this.data;
+    this.audio = new AudioPlayer();
+    this.dynamicPageTitles;
+    this.killGlossary = false;
+
+    this.touchDevice = 'ontouchstart' in window || navigator.msMaxTouchPoints;
+}
+Shell.prototype.getConfig = function() {
+    $.get('app.xml', function(data) {
+        _shell.configureApp(data);
+    });
+}
+Shell.prototype.configureApp = function(data) {
+    this.data = $(data);
+    this.setTracking($(data).find('tracking'));
+    this.setCourses($(data).find('courses'));
+    this.setResources($(data).find('resources'));
+    this.setLayout($(data).find('layout'));
+    this.setPlugins($(data).find('plugins'));
+    this.dynamicPageTitles = makeBool($(data).find('useDynamicPageTitles').text());
+    if ($(data).find('jira').length > 0) {
+        if (document.location.href.indexOf('alleni.com') > -1 || document.location.href.indexOf('localhost') > -1) {
+            $('body').append('<script src="' + $(data).find('jira').text() + '" type="text/javascript"></script>');
+        }
+    }
+    this.waitForLMS(function() {
+        _shell.initialize();
+    });
+    if ($(data).find('preload').length > 0) {
+        $(document).ready(function() {
+            var _assetLoader = new AssetLoader($(data).find('preload').text());
+        });
+    }
+}
+Shell.prototype.waitForLMS = function(callback) {
+    var pause = setInterval(function() {
+        if (_shell.tracking.activated) {
+            callback();
+            clearInterval(pause);
+        }
+    }, 100);
+}
+Shell.prototype.setJiraLocation = function(str) {
+    try {
+        setJiraLocation(str);
+    } catch (e) {
+        // method not found erroring in IE/Chrome
+    }
+
+}
+Shell.prototype.setPlugins = function(data) {
+
+    var _me = this;
+    var ps = $(data).children();
+    ps.each(function(i, obj) {
+        var plugin = new Plugin(obj.nodeName, $(obj).text(), _me);
+    });
+}
+Shell.prototype.loadNextPlugin = function() {
+    /*
+	var plugin = this.pluginList[0];
+	var script = $('<script language="javascript" src="plugins/' + plugin.type + '/' + plugin.type + '.js"></script>');
+	$('body').append();
+	*/
+}
+Shell.prototype.setTracking = function(data) {
+    this.tracking = new Tracking(data.find('type').text());
+}
+Shell.prototype.setCourses = function(data) {
+    var courses = data.children();
+    for (var i = 0; i < courses.length; i++) {
+        var obj = {};
+        obj.id = $(courses[i]).attr('id');
+        obj.menu = makeBool($(courses[i]).attr('menu'));
+        obj.tracked = makeBool($(courses[i]).attr('tracked'));
+        if (window.location.hash == ('#' + $(courses[i]).attr('id'))) {
+            obj.autoload = true;
+        } else {
+            obj.autoload = makeBool($(courses[i]).attr('autoload'));
+        }
+        obj.enabled = makeBool($(courses[i]).attr('enabled'));
+        obj.label = $(courses[i]).find('label').text();
+        obj.docTitle = $(courses[i]).find('docTitle').text();
+        obj.navTitle = $(courses[i]).find('navTitle').text();
+        obj.template = $(courses[i]).find('template').text();
+        obj.data = $(courses[i]).find('data').text();
+        this.courses.push(obj);
+        this.tracking.addCourseSection(obj);
+    }
+}
+Shell.prototype.doKillGlossary = function() {
+    _shell.killGlossary = true;
+}
+Shell.prototype.dontKillGlossary = function() {
+    _shell.killGlossary = false;
+}
+Shell.prototype.setResources = function(data) {
+    // var resources = data.children();
+    // for(var i = 0; i<resources.length; i++){
+    // 	var obj = {};
+    // 	obj.type = $(resources[i]).attr('type');
+    // 	obj.label = $(resources[i]).find('label').text();
+    // 	obj.dest = $(resources[i]).find('dest').text();
+    // 	this.resources.push(obj);
+    // }
+}
+Shell.prototype.setLayout = function(data) {
+    $('#container').css('width', $(data).attr('appWidth')).css('height', $(data).attr('appHeight'));
+    var kids = data.children();
+    for (var i = 0; i < kids.length; i++) {
+        var layer = null;
+        if (kids[i].tagName == 'content') {
+            layer = $('<iframe id="shell_content" frameborder="0" allowTransparency="true" name="content" scrolling="no" width="100%" height="100%" src="about:blank"></iframe>');
+            layer.on('load', this.modelLoaded);
+        } else if (kids[i].tagName == 'menu') {
+            layer = $('<div id="shell_menu"></div>')
+            $('head').append('<script language="javascript" src="' + $(kids[i]).find('code').text() + '"></script>');
+            /*
+			var menuStyles = $(kids[i]).find('css').text();
+			if(menuStyles != '' || menuStyles != undefined){
+				$('head').append('<link href="' + menuStyles + '" rel="stylesheet" type="text/css"></link>');
+			}
+			*/
+        } else if (kids[i].tagName == 'footer') {
+            layer = $('<div id="shell_footer"></div>')
+            $('head').append('<script language="javascript" src="' + $(kids[i]).find('code').text() + '"></script>');
+        } else {
+            layer = new ShellLayer(kids[i]);
+        }
+        this.layers[kids[i].tagName] = layer;
+        layer.addClass('shell_layer');
+        layer.css('left', $(kids[i]).attr('x') + 'px').css('top', $(kids[i]).attr('y') + 'px');
+        $('#container').append(layer);
+    }
+}
+Shell.prototype.initialize = function() {
+    this.menu = new Menu(this.courses, this.resources);
+    // this.footer = new Footer(this.courses);
+
+    if (this.tracking.lesson_location != null && this.tracking.lesson_location != 'null') {
+        console.log("Lesson location found");
+        // this.gotoSection(this.tracking.lesson_location);//split, check for model, then if there is more, prompt to go to bookmark
+        // if(this.tracking.lesson_location)//.id
+        console.log("Location: ", this.tracking.lesson_location);
+        var tmp = this.tracking.lesson_location.split(":::");
+
+        var tmp_activity = Number(tmp[0]);
+        var tmp_step = Number(tmp[1]);
+        var tmp_subStep = Number(tmp[2]);
+
+        for (var i = 0; i < this.courses.length; i++) {
+            if (this.courses[i].id == tmp[0]) {
+                if (this.courses[i].template == "models/stepper/index.html") {
+                    var r = confirm("Do you want to resume where you left off? (Section: " + (
+                    tmp_activity + 1) + ", Activity: " + (
+                    tmp_step + 1) + ", Page: " + (
+                    tmp_subStep + 1) + ")");
+                    if (r == true) {
+                        this.gotoSection(this.courses[i].id, false);
+                    } else {
+                        this.tracking.clearBookmark();
+                        for (var i = 0; i < this.courses.length; i++) {
+                            if (this.courses[i].autoload) {
+                                this.gotoSection(this.courses[i].id, false);
+                            }
+                        }
+                    }
+                } else {
+                    for (var i = 0; i < this.courses.length; i++) {
+                        if (this.courses[i].autoload) {
+                            this.gotoSection(this.courses[i].id, false);
+                        }
+                    }
+                }
+            }
+        }
+
+        console.log("Suspend Data: ", this.tracking.suspend_data);
+    } else {
+
+        console.log("Lesson location NOT FOUND");
+        for (var i = 0; i < this.courses.length; i++) {
+            console.log(this.courses[i].autoload);
+            if (this.courses[i].autoload) {
+                this.gotoSection(this.courses[i].id, false);
+            }
+        }
+    }
+}
+Shell.prototype.loadContent = function(course, backingUp) {
+    $('#shell_content').attr('src', 'about:blank');
+    var template = course.template;
+    if (backingUp) {
+        if (template.indexOf('?') == -1) {
+            template += '?backwards=true';
+        } else {
+            template += '&backwards=true';
+        }
+    }
+
+    _shell.setPageTitles(course.docTitle, course.navTitle);
+    $('#shell_menu').css('display', 'block');
+    // _shell.menu.showNext();
+    // _shell.menu.showBack();
+    // _shell.menu.resetPopupChanges();
+
+    $.get(course.data, function(data) {
+        $('#shell_content').attr('src', template);
+        _shell.tempCourseData = data;
+    });
+    this.currentSection = course;
+
+    try {
+        setJiraFile(course.data);
+    } catch (e) {
+        // no jira
+    }
+}
+Shell.prototype.modelLoaded = function() {
+    _shell.currentModel = window.content;
+    if ($('#shell_content').attr('src') != 'about:blank') {
+        _shell.currentModel._shell = _shell;
+        _shell.currentModel._loadedData = _shell.tempCourseData;
+    }
+}
+Shell.prototype.gotoSection = function(id, backingUp) {
+    // _shell.footer.hide();
+    this.loadContent(this.getSectionById(id), backingUp);
+    // this.menu.setStatus(id);
+    this.tracking.setTrackingSection(id);
+    $('.featurebgs').fadeOut();
+    $('#featbgs').empty();
+    // _shell.menu.progress_reset();
+}
+Shell.prototype.getSectionById = function(id) {
+    for (var i = 0; i < this.courses.length; i++) {
+        if (this.courses[i].id == id) {
+            return this.courses[i];
+        }
+    }
+}
+Shell.prototype.getIndexById = function(id) {
+    for (var i = 0; i < this.courses.length; i++) {
+        if (this.courses[i].id == id) {
+            return i;
+        }
+    }
+}
+Shell.prototype.isSectionComplete = function(id) {
+    if (this.tracking.getSectionStatus(id) == 'C') {
+        return true;
+    }
+    return false;
+}
+Shell.prototype.sectionComplete = function() {
+    this.activityComplete(); // catch legacy code
+}
+Shell.prototype.activityComplete = function() {
+    console.log('Shell.activityComplete()');
+    this.tracking.finishSection();
+}
+Shell.prototype.nextSection = function() {
+    var idx = this.getIndexById(this.currentSection.id);
+    if (idx < this.courses.length - 1) {
+        this.gotoSection(this.courses[idx + 1].id, false);
+    }
+}
+Shell.prototype.prevSection = function() {
+    var idx = this.getIndexById(this.currentSection.id);
+    if (idx > 0) {
+        this.gotoSection(this.courses[idx - 1].id, true);
+    }
+}
+Shell.prototype.restartSection = function() {
+    this.gotoSection(this.currentSection.id);
+}
+
+Shell.prototype.setPageTitles = function(docTitle, navTitle) {
+    if (this.dynamicPageTitles) {
+        document.title = docTitle;
+        $('.courseTitle').html(navTitle);
+    }
+}
+
+Shell.prototype.jiraLocation = function(txt) {
+    try {
+        setJiraLocation(txt);
+    } catch (e) {
+        // no jira
+    }
+}
+Shell.prototype.jiraItem = function(txt) {
+    try {
+        setJiraItem(txt);
+    } catch (e) {
+        // no jira
+    }
+}
+
+Shell.prototype.hideBackButton = function() {
+    $('.back').fadeOut();
+}
+Shell.prototype.showBackButton = function() {
+    $('.back').fadeIn();
+}
+Shell.prototype.appendPop = function(el) {
+    $('body').append(el);
+};
+Shell.prototype.removePop = function(target) {
+    $('body').find(target).remove();
+};
+Shell.prototype.hideMenuElements = function() {
+    // _shell.menu.hideElements();
+};
+/*
+Shell.prototype.popup = function(txt, btn, callback, param){
+	//console.log('popup');
+	_shell.closePopup();
+	var p = $('<div id="popup"></div>');
+	p.append('<div class="overlay"></div>');
+	var textBox = $('<div class="textbox"></div>');
+	textBox.append(txt);
+	var button = $('<div class="btn-wrapper incorrect-close"><div class="btn">' + btn + '</div></div>');
+	textBox.append(button);
+	textBox.append('<div style="clear:both"></div>');
+	p.append(textBox);
+	$('body').append(p);
+	button.click(function(){
+		_shell.closePopupAnim();
+		if(callback){callback(param)};
+	});
+
+	TweenMax.from(p, 0.5, {'alpha':0});
+	TweenMax.from(p.find('.textbox'), 0.3, {'transform':'scale(1.07,1.07)'});
+	p.find('.overlay').click(function(){button.click();});
+	return textBox;
+}
+Shell.prototype.additionalBtn = function(btntxt, callback, param){
+	var button2 = $('<div class="btn2-wrapper"><div class="btn">' + btntxt + '</div></div>');
+	$('#popup .btn-wrapper').before(button2);
+	button2.click(function(){
+		_shell.closePopup();
+		if(callback){callback(param)};
+	});
+}
+Shell.prototype.setuppopup = function(txt, btn,callback){
+	_shell.closePopup();
+	var p = $('<div id="popup"></div>');
+	p.append('<div class="overlay"></div>');
+	var textBox = $('<div class="setuptextbox"></div>');
+	textBox.append(txt);
+	textBox.append('<div style="clear:both"></div>');
+	p.append(textBox);
+	$('body').append(p);
+	$('.questionresponses').click(function(){
+		_shell.closePopup();
+		callback($(this).attr('id'));
+	});
+
+	TweenMax.from(p, 0.5, {'alpha':0});
+
+	return textBox;
+}
+Shell.prototype.closePopup = function(){
+	// console.log('closePopup');
+	$('#popup').empty();
+	$('#popup').remove();
+}
+
+*/
+function ShellLayer(data) {
+    var layer = $('<div id="shell_' + data.tagName + '"></div>');
+    if ($(data).attr('type') == 'image') {
+        layer.append('<img src="' + $(data).text() + '" />');
+    } else {
+        $.get($(data).text(), function(data) {
+            layer.append(data);
+        });
+    }
+    return layer;
+}
+
+// this.contentHeightWatch;  number
+// var contentHeight = 0;
+// $(document).ready(function(){
+// 	this.contentHeightWatch = setInterval(function(){
+// 		try {
+// 			if (window.content.$ !== undefined) {
+// 				if(contentHeight !=  window.content.$('body').height()){
+// 					contentHeight = window.content.$('body').height();
+// 					$('#shell_content').height(contentHeight);
+// 				}
+// 			}
+// 		} catch (e) {}
+
+// 	}, 333);
+// })

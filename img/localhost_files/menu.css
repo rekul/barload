@@ -1,0 +1,23 @@
+.menu-background-layer {
+	position:absolute;
+	height:100%;
+	width:100%;
+	background-image:url('img/menu-background.jpg');
+	z-index: -1;
+}
+
+.button-background{
+	position:absolute;
+	height:100%;
+	width:100%;
+	background-image:url('img/button-background.jpg');
+	z-index: 1;
+}
+
+.menu-content {
+	position:absolute;
+	height:100%;
+	width:100%;
+}
+
+/*# sourceMappingURL=menu.css.map */

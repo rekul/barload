@@ -1,0 +1,3 @@
+function debug() {
+	// for browser logging when console's aren't allowed, like LMS launches
+}

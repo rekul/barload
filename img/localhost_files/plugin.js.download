@@ -1,0 +1,20 @@
+function Plugin(id, url, shell){
+	this.id = id;
+	this.url = url;
+	this.shell = shell;
+	this.load();
+}
+Plugin.prototype.load = function(){
+	var _me = this;
+	$.get('plugins/'+this.url+'/'+this.url+'.js', function(data){
+		_me.loaded(data);
+	}).error(function(e, s, x){
+		//console.log('Plugin "' + _me.id + '" failed to load.');
+		//console.log('Error : ' + s);
+	});
+}
+Plugin.prototype.loaded = function(data){
+	var plug = $('<script language="javascript">' + data + '</script>');
+	$('body').append(plug);
+	this.shell[this.id] = new window[this.id + 'Plugin']('plugins/'+this.url+'/');
+}

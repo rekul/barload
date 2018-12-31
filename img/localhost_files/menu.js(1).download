@@ -1,0 +1,23 @@
+function Empty(){
+	this.poll = this.pollForContent();
+}
+Empty.prototype.pollForContent = function(){
+	return setInterval(this.pollCheck, 500);
+}
+Empty.prototype.pollCheck = function(){
+	if(_shell != undefined){
+		clearInterval(_empty.poll);
+		_empty.config(_loadedData);
+	}
+}
+Empty.prototype.config = function(data){
+	data= $(data);
+	$('.label').html(data.find('label').text());
+	$('.clicker').attr('value', data.find('button').text())
+		.click(function(){
+			_shell.activityComplete();
+			_shell.gotoSection(0);
+		})
+}
+
+var _empty = new Empty();

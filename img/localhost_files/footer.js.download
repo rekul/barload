@@ -1,0 +1,58 @@
+function Footer(cs) {
+    var _me = this;
+    $('#shell_footer').append('<div class="bar maincolumn"><div class="copyright">' + _shell.data.find('footer copyright').text() + '</div><div id="subNav"></div></div>');
+    var subnav = $('#shell_footer #subNav');
+    var next = $('<a href="javascript:void(0)" class="mainBtn footerMainBtnNext" id="next">' + _shell.data.find('footer next').text() + '</a>');
+    subnav.append(next);
+    _me.enabled = _shell.data.find('footer').attr('enabled') == 'true';
+
+    next.click(function() {
+        if (window.content.globalFooterClick == undefined) {
+            console.log('No globalFooterClick() defined in content model.');
+        } else {
+            window.content.globalFooterClick();
+        }
+    });
+
+    this.hideInstant();
+}
+Footer.prototype.hideInstant = function() {
+    $('#shell_footer #next').css('display', 'none');
+    $('#shell_footer').css('display', 'none');
+}
+Footer.prototype.hide = function() {
+    $('#shell_footer #next').css('display', 'none');
+    $('#shell_footer').fadeOut();
+}
+Footer.prototype.show = function() {
+    var _me = this;
+    if (_me.enabled) {
+        $('#shell_footer').fadeIn();
+    }
+};
+
+Footer.prototype.showNext = function() {
+    $('#shell_footer #next').css('display', 'inline-block');
+
+    $('.footerMainBtnNext').animateCss({name: 'bounce', repeat: 'infinite'})
+    $('.footerMainBtnNext').hover(function() {
+        $(this).removeClass('bounce');
+    });
+}
+
+Footer.prototype.openSimple = function() {
+    $('.box').animateCss({name: 'fadeInUp', time: '1s'});
+    $('.overlay').animateCss({name: 'fadeIn', time: '1s'});
+}
+
+Footer.prototype.closeSimple = function(callbackFn) {
+    $('.box').animateCss({name: 'fadeOutDown', time: '0.5s'});
+    $('.overlay').animateCss({
+        name: 'fadeOut',
+        time: '0.5s',
+        callback: function() {
+            $('.popup').remove();
+            callbackFn();
+        }
+    });
+}
