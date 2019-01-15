@@ -28,6 +28,7 @@ $( document ).ready(function() {
 		}
 		$('.unit-display').text("kg");
 		kgs = true;
+		changeLoad(0);
 	});
 
 	$('#radio-lb').click(function(){
@@ -37,6 +38,7 @@ $( document ).ready(function() {
 		}
 		$('.unit-display').text("lb");
 		kgs = false;
+		changeLoad(0);
 	});
 	$('#collars').change(function(){
 		collars = this.checked;
@@ -47,7 +49,6 @@ $( document ).ready(function() {
 		let currentWeight = $('.weight-display').text();
 		currentWeight = parseFloat(currentWeight) + parseFloat(weightChange);
 		$('.weight-display').text(currentWeight);
-
 
 		//animate plates
 		resetAnimationContainer();
