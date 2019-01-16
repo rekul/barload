@@ -91,16 +91,23 @@ $(document).ready(function() {
         //calculate and display exact load & error
         var error = loadPlates(currentWeight);
         if (kgs) {
-            $('.actual-load').text("Actual Load: " + roundToTen(idealWeight - error) + "kg (-" + roundToTen(error) + "kg)");
+            $('.actual-load').text("Actual Load: " + roundToTen(idealWeight - error) + "kg (" + roundToTen((idealWeight - error)*2.205) + "lbs)");
+            $('.error').text("Error: " + roundToTen(error) + "kg (" + roundToTen(2.205*error) + "lbs)");
         } else {
-            $('.actual-load').text("Actual Load: " + roundToTen((idealWeight - error) * 2.205) + "lbs (-" + roundToTen(error * 2.205) + "lbs)");
+            $('.actual-load').text("Actual Load: " + roundToTen((idealWeight - error)*2.205) + "lbs (" + roundToTen(idealWeight - error) + "kg)");
+            $('.error').text("Error: " + roundToTen(error*2.205) + "lb (" + roundToTen(error) + "kg)");
         }
+
 
         //add collars last
         if (collars) {
             $('.plate-text').text($('.plate-text').text() + " 2.5kg collars ");
             loadCollars();
+        }else{
+        	 $('.plate-text').text($('.plate-text').text().substring(0, $('.plate-text').text().length - 2));
         }
+
+
     }
 
     function resetAnimationContainer() {
@@ -116,15 +123,38 @@ $(document).ready(function() {
     }
 
     function addPlateText(number, text) {
+    	switch(text){
+    		case "red":
+	    		text = "Red";
+	    		break;
+	    	case "blue":
+	    		text = "Blue";
+	    		break;
+	    	case "green":
+	    		text = "Green";
+	    		break;
+	    	case "white":
+	    		text = "White";
+	    		break;
+	    	case "fivelb":
+	    		text = "5lb";
+	    		break;
+    		case "twolb":
+	    		text = "2.5lb";
+	    		break;
+	    	case "onelb":
+	    		text = "1.25lb";
+	    		break;
+    	}
         if (number === 0) {
             return;
         }
         if (number === 1) {
-            $('.plate-text').text($('.plate-text').text() + number + " " + text + " ");
+            $('.plate-text').text($('.plate-text').text() + " " + text + ", ");
             return true;
         }
         if (number > 1) {
-            $('.plate-text').text($('.plate-text').text() + number + " " + text + "s ");
+            $('.plate-text').text($('.plate-text').text() + number + " " + text + "s, ");
             return true;
         }
     }
@@ -138,8 +168,8 @@ $(document).ready(function() {
                 scale: 0,
                 ease: Power3.easeOut
             }, {
-                scale: 0.5,
-                x: currentOffset,
+                scale: 0.3,
+                x: currentOffset-10,
                 delay: currentDelay
             });
         }
@@ -147,7 +177,7 @@ $(document).ready(function() {
 
     function loadReds(load) {
         var plates = 0;
-        while (load >= 50) {
+        while (load >= 50 && plates < 3) {
             plates++;
             load -= 50;
         }
@@ -157,7 +187,7 @@ $(document).ready(function() {
 
     function loadBlues(load) {
         var plates = 0;
-        while (load >= 40) {
+        while (load >= 40 && plates < 2) {
             plates++;
             load -= 40;
         }
@@ -167,7 +197,7 @@ $(document).ready(function() {
 
     function loadGreens(load) {
         var plates = 0;
-        while (load >= 20) {
+        if (load >= 20) {
             plates++;
             load -= 20;
         }
@@ -177,11 +207,11 @@ $(document).ready(function() {
 
     function loadWhites(load) {
         var plates = 0;
-        while (load >= 10) {
+        if (load >= 10) {
             plates++;
             load -= 10;
         }
-        addWeight('white', plates, 0.8);
+        addWeight('white', plates, 1);
         return loadFives(load);
     }
 
@@ -232,11 +262,11 @@ $(document).ready(function() {
                     ease: Power3.easeOut
                 }, {
                     x: currentOffset,
-                    scale: 0.5,
+                    scale: 0.3,
                     delay: currentDelay
                 });
                 currentPlate++;
-                currentOffset += 16 * thin;
+                currentOffset += 10 * thin;
                 added++;
                 currentDelay += 0.25;
             }

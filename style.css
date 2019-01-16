@@ -13,6 +13,12 @@ input[type=number]{
 	width:100px;
 }
 
+fieldset{
+	display:inline-block;
+	border:none;
+	padding:0;
+}
+
 .section{
 	position:relative;
 }
@@ -65,9 +71,13 @@ input[type=number]{
 	margin-top:10px;
 }
 
+.error{
+	margin-top:10px;
+}
+
 .animation-container{
 	position:absolute;
-	top:50px;
+	top:18px;
 	left:0px;
 	padding-left:10%;
 	height:250px;
@@ -75,12 +85,18 @@ input[type=number]{
 }
 
 .pnp-logo{
+	float:left;
 	margin:auto;
 	text-align: center;
 	background-image: url('img/pnp.jpg');
 	z-index:0;
 	width:150px;
 	height:150px;
+}
+
+.options{
+	float:right;
+	padding-top:30px;
 }
 
 .red{
@@ -117,7 +133,7 @@ input[type=number]{
 	background-image: url('img/white.png');
 	position:absolute;
 	transform:scale(0.5);
-	width:76px;
+	width:70px;
 	height:518px;
     top: -110px;
     left: 50px;

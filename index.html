@@ -19,14 +19,19 @@
 <body>
 	<div class='content'>
 		<div class='section'>
-			<div class='pnp-logo'></div>
 			<div class='settings'>
 				<form><fieldset>
-					<input id='radio-kg' type='radio' name='unit' value='kg' checked>KG
-					<input id='radio-lb' type='radio' name='unit' value='lb'>Lbs
-					<br>
-					<input id='collars' type='checkbox'>2.5KG Collars
-					<input id='kg-bar' type='checkbox' checked>KG Bar
+					<div class='pnp-logo'></div>
+					<div class='options'>
+						<input id='radio-kg' type='radio' name='unit' value='kg' checked>KG
+						<input id='radio-lb' type='radio' name='unit' value='lb'>Lbs
+						<br>
+						<br>
+						<input id='collars' type='checkbox'>Collars
+						<br>
+						<br>
+						<input id='kg-bar' type='checkbox' checked>KG Bar
+					</div>
 				</fieldset></form>
 			</div>
 		</div>
@@ -42,6 +47,7 @@
 		</div>
 		<div class='section'>
 			<div class='actual-load'></div>
+			<div class='error'></div>
 			<div class='plate-text'></div>
 			<div class='animation-container'></div>
 		</div>
