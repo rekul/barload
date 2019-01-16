@@ -97,6 +97,9 @@ $(document).ready(function() {
             $('.actual-load').text("Actual Load: " + roundToTen((idealWeight - error)*2.205) + "lbs (" + roundToTen(idealWeight - error) + "kg)");
             $('.error').text("Error: -" + roundToTen(error*2.205) + "lb (-" + roundToTen(error) + "kg)");
         }
+        if(error === 0){
+        	$('.error').empty();
+        }
 
 
         //add collars last
