@@ -5,7 +5,7 @@
 <link rel="stylesheet" href="style.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/2.0.2/TweenMax.min.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-<script src="script.js?2"></script>
+<script src="script.js"></script>
 
 </head>
 <body>
@@ -13,30 +13,28 @@
 		<div class='section'>
 			<div class='pnp-logo'></div>
 			<div class='settings'>
-				<h2>Settings:</h2>
 				<form><fieldset>
 					<input id='radio-kg' type='radio' name='unit' value='kg' checked>KG
 					<input id='radio-lb' type='radio' name='unit' value='lb'>Lbs
 					<br>
 					<input id='collars' type='checkbox'>2.5KG Collars
+					<input id='kg-bar' type='checkbox' checked>KG Bar
 				</fieldset></form>
 			</div>
 		</div>
 		<div class='section'>
 			
 			<div class='buttons'>
-				<div class='button button-wide' id="big-decrease">-5</div>
-				<div class='button' id='decrease'>-0.5</div>
-				<div class='weight-display'>100</div>
+				<div class='button' id='decrease'>-2.5</div>
+				<input type='number' class='weight-display' value='120'/>
 				<div class='unit-display'>kg</div>
-				<div class='button' id='increase'>+0.5</div>
-				<div class='button button-wide' id="big-increase">+5</div>
+				<div class='button' id='increase'>+2.5</div>
 			</div>
 
 		</div>
 		<div class='section'>
-			<div class='plate-text'></div>
 			<div class='actual-load'></div>
+			<div class='plate-text'></div>
 			<div class='animation-container'></div>
 		</div>
 
