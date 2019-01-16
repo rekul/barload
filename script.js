@@ -92,10 +92,10 @@ $(document).ready(function() {
         var error = loadPlates(currentWeight);
         if (kgs) {
             $('.actual-load').text("Actual Load: " + roundToTen(idealWeight - error) + "kg (" + roundToTen((idealWeight - error)*2.205) + "lbs)");
-            $('.error').text("Error: " + roundToTen(error) + "kg (" + roundToTen(2.205*error) + "lbs)");
+            $('.error').text("Error: -" + roundToTen(error) + "kg (-" + roundToTen(2.205*error) + "lbs)");
         } else {
             $('.actual-load').text("Actual Load: " + roundToTen((idealWeight - error)*2.205) + "lbs (" + roundToTen(idealWeight - error) + "kg)");
-            $('.error').text("Error: " + roundToTen(error*2.205) + "lb (" + roundToTen(error) + "kg)");
+            $('.error').text("Error: -" + roundToTen(error*2.205) + "lb (-" + roundToTen(error) + "kg)");
         }
 
 
@@ -144,6 +144,8 @@ $(document).ready(function() {
 	    		break;
 	    	case "onelb":
 	    		text = "1.25lb";
+	    		break;
+	    	default:
 	    		break;
     	}
         if (number === 0) {
