@@ -98,7 +98,7 @@ $(document).ready(function() {
             $('.error').text("Error: -" + roundToTen(error*2.205) + "lb (-" + roundToTen(error) + "kg)");
         }
         if(error === 0){
-        	$('.error').empty();
+        	$('.error').text("Error: None");
         }
 
 
